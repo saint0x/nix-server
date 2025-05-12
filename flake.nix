@@ -16,6 +16,7 @@
         ({ config, pkgs, lib, ... }: { # Added 'lib' for potentially useful functions
           imports = [ 
             # <path/to/hardware-configuration.nix> 
+            <nixpkgs/nixos/modules/virtualisation/digital-ocean-image.nix>
           ];
 
           # --- Core System Settings ---
