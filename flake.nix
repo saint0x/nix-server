@@ -11,12 +11,11 @@
       pkgs = nixpkgs.legacyPackages.${system}; 
       
       # Define the NixOS configuration module list in one place
-      nixosModule = { config, pkgs, lib, ... }: { # Changed to a single module, not a list of functions
+      nixosModule = { config, pkgs, lib, nixpkgs, ... }: { # Changed to a single module, not a list of functions
           imports = [ 
             # <path/to/hardware-configuration.nix> 
-            # Directly use nixpkgs from the outer scope here
-            # (toString nixpkgs + "/nixos/modules/virtualisation/digital-ocean-image.nix") 
-            <nixpkgs/nixos/modules/virtualisation/digital-ocean-image.nix> # Revert to angle bracket import
+            # Use the passed nixpkgs argument
+            (nixpkgs + "/nixos/modules/virtualisation/digital-ocean-image.nix")
           ];
 
           # --- Core System Settings ---
@@ -81,6 +80,8 @@
         inherit system;
         # Pass the single module directly
         modules = [ nixosModule ];
+        # Pass nixpkgs input as a special argument
+        specialArgs = { inherit nixpkgs; }; 
       };
 
     in {
