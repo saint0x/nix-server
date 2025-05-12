@@ -2,49 +2,49 @@
   description = "NixOS configuration for a DigitalOcean droplet backend";
 
   inputs = {
-    # Using unstable for potentially newer packages, common in flakes
-    # Pin to a specific revision for reproducibility if desired
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable"; 
   };
 
   outputs = { self, nixpkgs }: 
     let
-      # System architecture (adjust if your droplet is ARM, etc.)
       system = "x86_64-linux"; 
-      
-      # Helper to access packages for the target system
       pkgs = nixpkgs.legacyPackages.${system}; 
-    in {
-    
-    # NixOS configuration entry
-    nixosConfigurations.digitalocean-droplet = nixpkgs.lib.nixosSystem {
-      inherit system;
       
-      modules = [
+      # Define the NixOS configuration module list in one place
+      nixosModules = [
         # Your main configuration module
-        ({ config, pkgs, ... }: {
+        ({ config, pkgs, lib, ... }: { # Added 'lib' for potentially useful functions
           imports = [ 
-            # <path/to/hardware-configuration.nix> # If you had one
+            # <path/to/hardware-configuration.nix> 
           ];
 
           # --- Core System Settings ---
           boot.loader.grub.enable = true;
-          boot.loader.grub.device = "/dev/vda";
-          boot.loader.grub.useOSProber = false;
+          boot.loader.grub.device = "/dev/vda"; # Specify device for DigitalOcean
+          boot.loader.grub.useOSProber = false; 
+          # Needed for DO image generation
+          boot.loader.grub.default = lib.mkForce 0; 
 
           networking.useDHCP = true;
 
           fileSystems."/" = { 
-            device = "/dev/vda1"; 
+            device = "/dev/vda1"; # Image builder will create this partition
             fsType = "ext4"; 
           };
+
+          # --- Image Build Settings ---
+          # Enable building the DigitalOcean image format (compressed qcow2)
+          # This option implicitly sets up necessary partitioning etc.
+          virtualisation.digitaloceanImage.enable = true;
+          # Optionally set the compressed image size if needed (default might be fine)
+          # virtualisation.digitaloceanImage.compressedSize = "5G"; 
 
           time.timeZone = "Etc/UTC";
           i18n.defaultLocale = "en_US.UTF-8";
 
           # --- Nix Settings ---
           nix.settings.experimental-features = [ "nix-command" "flakes" ];
-          nix.settings.auto-optimise-store = true; # Recommended for servers
+          nix.settings.auto-optimise-store = true;
 
           # --- SSH Server ---
           services.openssh = {
@@ -58,36 +58,42 @@
             "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHyc..." 
           ];
 
-          # --- Required Packages for your Backend ---
+          # --- Required Packages ---
           environment.systemPackages = with pkgs; [
             git
             vim
             wget
-            
-            # Core Nix tooling (nix-shell, nix-build, nix profile etc.)
-            nix # Includes the nix command-line tools
-
-            # Utilities for fetching sources (often needed for packaging)
-            # Check nixpkgs for the exact names if these don't resolve
-            nix-prefetch-scripts # Contains nix-prefetch-url, nix-prefetch-git etc. 
-            # Alternatively, fetch individually if preferred:
-            # nix-prefetch-git 
-            # nix-prefetch-url
-
-            # Add any other tools your backend service might need globally
+            nix 
+            nix-prefetch-scripts
           ];
 
           # --- NixOS Version ---
-          # Sets the NixOS release for default stateful settings. Match to your install target.
-          system.stateVersion = "23.11"; # Adjust if using a different NixOS base version
+          system.stateVersion = "23.11"; # Adjust if needed
 
-          # --- Basic Firewall (Recommended) ---
-          # Allow SSH connections
+          # --- Basic Firewall ---
           networking.firewall.enable = true;
           networking.firewall.allowedTCPPorts = [ 22 ]; 
-          # Add other ports if your backend service listens on them
         })
       ];
-    };
+      
+      # Build the NixOS system using the defined modules
+      nixosSystem = nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = nixosModules;
+      };
+
+    in {
+    
+    # Expose the NixOS configuration itself
+    nixosConfigurations.digitalocean-droplet = nixosSystem;
+
+    # --- ADD THIS ---
+    # Expose the DigitalOcean image derivation directly
+    # This allows 'nix build .#digitalOceanImage'
+    digitalOceanImage = nixosSystem.config.system.build.digitalOceanImage;
+
+    # --- Optional: Expose a default package (e.g., for 'nix build') ---
+    # defaultPackage.${system} = self.digitalOceanImage; 
+    # Or expose something else if more appropriate
   };
 }
