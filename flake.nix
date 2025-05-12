@@ -29,7 +29,7 @@
           # --- Image Build Settings ---
           # Enable building the DigitalOcean image format (compressed qcow2)
           # This option implicitly sets up necessary partitioning etc.
-          virtualisation.digitaloceanImage.enable = true;
+          # virtualisation.digitaloceanImage.enable = true; # MOVED
           # Optionally set the compressed image size if needed (default might be fine)
           # virtualisation.digitaloceanImage.compressedSize = "5G"; 
 
@@ -72,10 +72,13 @@
       # Build the NixOS system using the defined modules
       nixosSystem = nixpkgs.lib.nixosSystem {
         inherit system;
-        # List the imported module FIRST, then our configuration module
+        # List the imported module FIRST, then our configuration module,
+        # then the module enabling the feature.
         modules = [ 
           (nixpkgs + "/nixos/modules/virtualisation/digital-ocean-image.nix")
           nixosModule
+          # Add a small module to enable the feature LAST
+          { virtualisation.digitaloceanImage.enable = true; }
         ];
         # Pass nixpkgs input as a special argument
         specialArgs = { inherit nixpkgs; }; 
