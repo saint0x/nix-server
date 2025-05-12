@@ -15,7 +15,8 @@
           imports = [ 
             # <path/to/hardware-configuration.nix> 
             # Directly use nixpkgs from the outer scope here
-            (toString nixpkgs + "/nixos/modules/virtualisation/digital-ocean-image.nix") 
+            # (toString nixpkgs + "/nixos/modules/virtualisation/digital-ocean-image.nix") 
+            <nixpkgs/nixos/modules/virtualisation/digital-ocean-image.nix> # Revert to angle bracket import
           ];
 
           # --- Core System Settings ---
