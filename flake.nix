@@ -11,12 +11,11 @@
       pkgs = nixpkgs.legacyPackages.${system}; 
       
       # Define the NixOS configuration module list in one place
-      nixosModules = [
-        # Your main configuration module
-        ({ config, pkgs, lib, ... }: { # Added 'lib' for potentially useful functions
+      nixosModule = { config, pkgs, lib, ... }: { # Changed to a single module, not a list of functions
           imports = [ 
             # <path/to/hardware-configuration.nix> 
-            (nixpkgs + "/nixos/modules/virtualisation/digital-ocean-image.nix") # Use nixpkgs path
+            # Directly use nixpkgs from the outer scope here
+            (toString nixpkgs + "/nixos/modules/virtualisation/digital-ocean-image.nix") 
           ];
 
           # --- Core System Settings ---
@@ -74,13 +73,13 @@
           # --- Basic Firewall ---
           networking.firewall.enable = true;
           networking.firewall.allowedTCPPorts = [ 22 ]; 
-        })
-      ];
+        };
       
       # Build the NixOS system using the defined modules
       nixosSystem = nixpkgs.lib.nixosSystem {
         inherit system;
-        modules = nixosModules;
+        # Pass the single module directly
+        modules = [ nixosModule ];
       };
 
     in {
