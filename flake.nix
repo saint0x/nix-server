@@ -16,7 +16,7 @@
         ({ config, pkgs, lib, ... }: { # Added 'lib' for potentially useful functions
           imports = [ 
             # <path/to/hardware-configuration.nix> 
-            <nixpkgs/nixos/modules/virtualisation/digital-ocean-image.nix>
+            (nixpkgs + "/nixos/modules/virtualisation/digital-ocean-image.nix") # Use nixpkgs path
           ];
 
           # --- Core System Settings ---
