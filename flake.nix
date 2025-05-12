@@ -12,12 +12,6 @@
       
       # Define the NixOS configuration module list in one place
       nixosModule = { config, pkgs, lib, nixpkgs, ... }: { # Changed to a single module, not a list of functions
-          imports = [ 
-            # <path/to/hardware-configuration.nix> 
-            # Use the passed nixpkgs argument
-            (nixpkgs + "/nixos/modules/virtualisation/digital-ocean-image.nix")
-          ];
-
           # --- Core System Settings ---
           boot.loader.grub.enable = true;
           boot.loader.grub.device = "/dev/vda"; # Specify device for DigitalOcean
@@ -78,8 +72,11 @@
       # Build the NixOS system using the defined modules
       nixosSystem = nixpkgs.lib.nixosSystem {
         inherit system;
-        # Pass the single module directly
-        modules = [ nixosModule ];
+        # List the imported module FIRST, then our configuration module
+        modules = [ 
+          (nixpkgs + "/nixos/modules/virtualisation/digital-ocean-image.nix")
+          nixosModule
+        ];
         # Pass nixpkgs input as a special argument
         specialArgs = { inherit nixpkgs; }; 
       };
